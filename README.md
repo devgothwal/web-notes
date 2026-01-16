@@ -1,94 +1,190 @@
-# Web Notes 📝
+# 📝 Web Notes
 
-A simple, functional notes-taking web app with calendar navigation and rich text formatting.
+A beautiful, functional notes-taking web application with **calendar-based navigation** and **rich text formatting**, designed with a **Forex Factory-inspired utility-first aesthetic**.
 
-**Design Inspired by**: Forex Factory's utility-first aesthetic
+<p align="center">
+  <img src="screenshots/dark-theme.png" alt="Web Notes Dark Theme" width="800">
+</p>
 
-![Web Notes Screenshot](./screenshots/demo.png)
-
-## Features
+## ✨ Features
 
 ### 📅 Calendar Navigation
-- Monthly calendar sidebar
-- Click any date to view/edit that day's notes
-- Visual indicators (dots) for dates with notes
-- Quick "Today" button
+Navigate your notes by date with an intuitive monthly calendar:
+- **Visual indicators** - Dots show which dates have notes
+- **Click any date** to view/edit that day's notes
+- **Today button** for quick access to current date
+- **Month navigation** with previous/next controls
 
 ### ✏️ Rich Text Formatting
-- **Headings**: H1, H2
-- **Text Styles**: Bold, Italic, Underline, Strikethrough
-- **Lists**: Bullet points
-- **Tasks**: Interactive checkboxes
-- **Colors**: Text color and highlight pickers
+A full-featured formatting toolbar:
 
-### 💾 Autosave
-- Automatically saves every second
-- Uses localStorage (no server required)
-- Data persists between sessions
-- Per-date storage
+| Tool | Function | Shortcut |
+|------|----------|----------|
+| **H1** | Large heading | - |
+| **H2** | Section heading | - |
+| **B** | Bold text | `Ctrl+B` |
+| **I** | Italic text | `Ctrl+I` |
+| **U** | Underline text | `Ctrl+U` |
+| **S** | ~~Strikethrough~~ | - |
+| **•** | Bullet list | - |
+| **☑** | Checkbox (toggleable) | - |
+| **🎨** | Text color picker | - |
+| **🖍** | Highlight color | - |
+
+### 💾 Automatic Saving
+- **Autosave every second** - Never lose your work
+- **localStorage persistence** - Data survives browser restart
+- **Per-date storage** - Each day has its own notes
+- **No server required** - Works completely offline
 
 ### 🎨 Themes
-- Dark mode (default)
-- Light mode toggle
+Toggle between carefully designed themes:
 
-### 📄 Export
-- Save as `.txt` file
-- Print directly from browser
+<table>
+<tr>
+<td align="center"><strong>Dark Theme</strong><br>(Default)</td>
+<td align="center"><strong>Light Theme</strong></td>
+</tr>
+<tr>
+<td><img src="screenshots/dark-theme.png" width="400"></td>
+<td><img src="screenshots/light-theme.png" width="400"></td>
+</tr>
+</table>
 
-## Quick Start
+### 📄 Export Options
+- **Save as .txt** - Download your notes
+- **Print** - Direct browser printing support
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/web-notes.git
-   cd web-notes
-   ```
+---
 
-2. Open `index.html` in your browser, or serve with any HTTP server:
-   ```bash
-   python3 -m http.server 8080
-   ```
+## 🚀 Quick Start
 
-3. Open http://localhost:8080 in your browser
+### Option 1: Direct File Access
+Simply open `index.html` in your browser - no server required!
 
-## Project Structure
+### Option 2: Local Server
+```bash
+# Clone the repository
+git clone https://github.com/devgothwal/web-notes.git
+cd web-notes
+
+# Start a simple server
+python3 -m http.server 8080
+
+# Open in browser
+# http://localhost:8080
+```
+
+### Option 3: Live Server (VS Code)
+Use the Live Server extension for hot reload during development.
+
+---
+
+## 📁 Project Structure
 
 ```
 web-notes/
-├── index.html          # Main application
+├── index.html              # Main application (single-page app)
 ├── styles/
-│   └── main.css        # Forex Factory-inspired styling
+│   └── main.css            # Complete styling (CSS variables, themes)
 ├── scripts/
-│   ├── app.js          # Main controller
-│   ├── calendar.js     # Calendar component
-│   └── editor.js       # Rich text editor
+│   ├── app.js              # Main controller (theme, save, print)
+│   ├── calendar.js         # Calendar component
+│   └── editor.js           # Rich text editor with autosave
+├── screenshots/            # Documentation images
+│   ├── dark-theme.png
+│   └── light-theme.png
+├── docs/
+│   └── ARCHITECTURE.md     # Technical documentation
 └── README.md
 ```
 
-## Technology
+---
 
-- **Pure HTML/CSS/JavaScript** - No frameworks or build tools
-- **localStorage API** - For persistent data storage
-- **contenteditable** - For rich text editing
-- **CSS Variables** - For easy theming
+## 🛠️ Technical Details
 
-## Keyboard Shortcuts
+### Technologies
+- **Pure HTML5, CSS3, JavaScript** - No frameworks or build tools
+- **CSS Variables** - Easy theming and customization
+- **localStorage API** - Persistent data storage
+- **contenteditable** - Native rich text editing
+- **execCommand API** - Text formatting commands
+
+### Browser Support
+| Browser | Support |
+|---------|---------|
+| Chrome | ✅ Full |
+| Firefox | ✅ Full |
+| Safari | ✅ Full |
+| Edge | ✅ Full |
+| Opera | ✅ Full |
+
+### Data Storage
+Notes are stored in localStorage with date-based keys:
+```javascript
+// Storage format
+localStorage.setItem('webnotes_2026-01-16', '<html content>');
+localStorage.setItem('webnotes_theme', 'dark');
+```
+
+---
+
+## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+B` | Bold |
-| `Ctrl+I` | Italic |
-| `Ctrl+U` | Underline |
-| `Ctrl+S` | Force save |
-| `Tab` | Indent |
+| `Ctrl + B` | Bold |
+| `Ctrl + I` | Italic |
+| `Ctrl + U` | Underline |
+| `Ctrl + S` | Force save |
+| `Tab` | Indent text |
 
-## Browser Support
+---
 
-Works on all modern browsers:
-- Chrome
-- Firefox
-- Safari
-- Edge
+## 🎨 Customization
 
-## License
+### Changing Colors
+Edit the CSS variables in `styles/main.css`:
 
-MIT License - Feel free to use and modify!
+```css
+:root {
+    --bg-primary: #1e222d;      /* Main background */
+    --accent-primary: #4a90d9;  /* Accent color */
+    --text-primary: #e0e0e0;    /* Main text color */
+}
+```
+
+### Adding Fonts
+Import your preferred fonts in `index.html`:
+```html
+<link href="https://fonts.googleapis.com/css2?family=YourFont&display=swap" rel="stylesheet">
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📜 License
+
+MIT License - feel free to use and modify for any purpose!
+
+---
+
+## 🙏 Acknowledgments
+
+- **Design Inspiration**: [Forex Factory](https://www.forexfactory.com) - Utility-first, clean interface
+- **Feature Reference**: [Online Notepad](https://onlinenotepad.org) - Simple, functional note-taking
+
+---
+
+<p align="center">
+  Made with ❤️ for productivity
+</p>
