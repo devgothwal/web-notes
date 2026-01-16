@@ -15,13 +15,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# Configuration
-DB_DIR = Path("/var/opt/webnotes")
-DB_PATH = DB_DIR / "notes.db"
-STATIC_DIR = Path(__file__).parent.parent  # Parent directory (Web Notes/)
+# Configuration - Support Docker and local environments
+DB_PATH = Path(os.environ.get('WEBNOTES_DB_PATH', '/var/opt/webnotes/notes.db'))
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# Ensure database directory exists
-DB_DIR.mkdir(parents=True, exist_ok=True)
+STATIC_DIR = Path(__file__).parent.parent  # Parent directory (Web Notes/)
 
 app = FastAPI(title="Web Notes API", version="1.0.0")
 
@@ -181,10 +179,15 @@ async def serve_index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
-# Mount static directories
-app.mount("/styles", StaticFiles(directory=STATIC_DIR / "styles"), name="styles")
-app.mount("/scripts", StaticFiles(directory=STATIC_DIR / "scripts"), name="scripts")
-app.mount("/screenshots", StaticFiles(directory=STATIC_DIR / "screenshots"), name="screenshots")
+# Mount static directories (only if they exist)
+def mount_if_exists(path: str, directory: Path, name: str):
+    """Mount a static directory only if it exists"""
+    if directory.exists():
+        app.mount(path, StaticFiles(directory=directory), name=name)
+
+mount_if_exists("/styles", STATIC_DIR / "styles", "styles")
+mount_if_exists("/scripts", STATIC_DIR / "scripts", "scripts")
+mount_if_exists("/screenshots", STATIC_DIR / "screenshots", "screenshots")
 
 
 if __name__ == "__main__":

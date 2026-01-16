@@ -1,0 +1,63 @@
+# =====================================================
+# Web Notes - Docker Compose Configuration
+# Supports both Production and Development modes
+# =====================================================
+
+services:
+  # ===========================================
+  # PRODUCTION - Optimized for stability
+  # ===========================================
+  webnotes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: webnotes-prod
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      # Persistent data storage
+      - webnotes-data:/data
+    environment:
+      - WEBNOTES_DB_PATH=/data/notes.db
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/api/dates" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - prod
+
+  # ===========================================
+  # DEVELOPMENT - Hot reload enabled
+  # ===========================================
+  webnotes-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: webnotes-dev
+    restart: unless-stopped
+    ports:
+      - "8889:8888"
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app/backend:ro
+      - ./scripts:/app/scripts:ro
+      - ./styles:/app/styles:ro
+      - ./index.html:/app/index.html:ro
+      # Persistent dev data
+      - webnotes-dev-data:/data
+    environment:
+      - WEBNOTES_DB_PATH=/data/notes.db
+      - WEBNOTES_DEV=true
+    profiles:
+      - dev
+
+# Named volumes for data persistence
+volumes:
+  webnotes-data:
+    name: webnotes-data
+  webnotes-dev-data:
+    name: webnotes-dev-data
