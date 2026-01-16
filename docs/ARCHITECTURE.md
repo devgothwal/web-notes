@@ -2,150 +2,134 @@
 
 ## Overview
 
-Web Notes is a single-page application (SPA) built with vanilla JavaScript following a component-based architecture.
+Web Notes is a full-stack notes application with a FastAPI backend and vanilla JavaScript frontend.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Browser                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │  Calendar   │  │    Editor    │  │   Notes List  │  │
+│  │  Component  │  │   Component  │  │   Component   │  │
+│  └──────┬──────┘  └──────┬───────┘  └───────┬───────┘  │
+└─────────┼────────────────┼──────────────────┼──────────┘
+          │                │                  │
+          └────────────────┼──────────────────┘
+                           │ REST API
+          ┌────────────────▼────────────────┐
+          │         FastAPI Backend         │
+          │           (Uvicorn)             │
+          │  ┌──────────────────────────┐  │
+          │  │     CRUD Endpoints       │  │
+          │  │  GET/POST/PUT/DELETE     │  │
+          │  └────────────┬─────────────┘  │
+          └───────────────┼────────────────┘
+                          │
+          ┌───────────────▼────────────────┐
+          │          SQLite DB             │
+          │   /data/notes.db (Docker)      │
+          └────────────────────────────────┘
+```
 
 ## Components
 
-### 1. App Controller (`app.js`)
-**Purpose**: Main orchestrator that coordinates all components
+### Frontend
 
-**Responsibilities**:
-- Initialize Editor and Calendar components
-- Handle theme toggling (dark/light)
-- Manage file download functionality
-- Set up header button event listeners
+| Component | File | Purpose |
+|-----------|------|---------|
+| App Controller | `scripts/app.js` | Coordinates components, handles theme |
+| Calendar | `scripts/calendar.js` | Date navigation, month view |
+| Editor | `scripts/editor.js` | Rich text, autosave, API calls |
 
-**Dependencies**: Calendar, Editor
+### Backend
 
----
-
-### 2. Calendar Component (`calendar.js`)
-**Purpose**: Date navigation and visual date picker
-
-**Public API**:
-```javascript
-class Calendar {
-    constructor(options)  // Initialize with callbacks
-    selectDate(date)      // Programmatically select a date
-    refresh()             // Re-render calendar (after note changes)
-    goToToday()           // Navigate to current date
-}
-```
-
-**Options**:
-- `onDateSelect(date)`: Callback when user clicks a date
-- `getNoteDates()`: Function returning array of date keys with notes
-
-**State**:
-- `currentDate`: Currently displayed month
-- `selectedDate`: Currently selected date
-
----
-
-### 3. Editor Component (`editor.js`)
-**Purpose**: Rich text editing with autosave
-
-**Public API**:
-```javascript
-class Editor {
-    constructor(options)  // Initialize with callbacks
-    loadDate(date)        // Load notes for a specific date
-    getNoteDates()        // Get array of dates with saved notes
-    getContent()          // Get HTML content
-    getPlainText()        // Get plain text content
-    saveNow()             // Force save
-    clear()               // Clear editor content
-}
-```
-
-**Features**:
-- contenteditable-based rich text
-- execCommand for formatting
-- Debounced autosave (1 second)
-- localStorage persistence
-
----
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/notes/{date}` | GET | Get all notes for a date |
+| `/api/notes` | POST | Create new note |
+| `/api/notes/{id}` | PUT | Update note |
+| `/api/notes/{id}` | DELETE | Delete note |
+| `/api/dates` | GET | Get dates with notes |
 
 ## Data Flow
 
 ```
-┌─────────────┐     onDateSelect      ┌──────────┐
-│  Calendar   │ ─────────────────────▶│  Editor  │
-│             │                        │          │
-│  (renders   │     getNoteDates()    │ (loads   │
-│   month)    │◀─────────────────────  │  notes)  │
-└─────────────┘                        └──────────┘
-       │                                    │
-       │                                    │
-       ▼                                    ▼
-┌─────────────────────────────────────────────────┐
-│                  localStorage                    │
-│  webnotes_2026-01-16: "<html content>"          │
-│  webnotes_2026-01-15: "<html content>"          │
-│  webnotes_theme: "dark"                         │
-└─────────────────────────────────────────────────┘
+1. User selects date in Calendar
+   └─► Calendar calls editor.loadDate(date)
+
+2. Editor fetches notes from API
+   └─► GET /api/notes/2026-01-16
+   └─► Renders notes list in sidebar
+
+3. User edits note content
+   └─► Autosave triggers after 1 second
+   └─► PUT /api/notes/{id} or POST /api/notes
+
+4. Calendar refreshes to show dots on dates with notes
+   └─► GET /api/dates
 ```
 
----
+## Database Schema
+
+```sql
+CREATE TABLE notes (
+    id TEXT PRIMARY KEY,           -- Random ID (e.g., "mkh0cz9ha8yhj")
+    date_key TEXT NOT NULL,        -- "2026-01-16"
+    title TEXT DEFAULT '',         -- "My Note Title"
+    content TEXT DEFAULT '',       -- HTML content
+    created_at TEXT NOT NULL,      -- ISO timestamp
+    updated_at TEXT NOT NULL       -- ISO timestamp
+);
+
+CREATE INDEX idx_notes_date ON notes(date_key);
+```
+
+## Deployment Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           /opt/webnotes/                │
+│  (Non-encrypted, survives without login)│
+└───────────────────┬─────────────────────┘
+                    │
+         ┌──────────▼──────────┐
+         │   Docker Container  │
+         │   webnotes-prod     │
+         │   Port 8888         │
+         └──────────┬──────────┘
+                    │
+         ┌──────────▼──────────┐
+         │   Docker Volume     │
+         │   webnotes-data     │
+         │   (Persistent DB)   │
+         └─────────────────────┘
+```
 
 ## Styling Architecture
 
-### CSS Variables (Theming)
-All colors use CSS custom properties for easy theming:
+### Theme System
 
 ```css
 :root {
-    --bg-primary: #1e222d;
-    --accent-primary: #4a90d9;
-    /* ... */
+    /* Light theme (default) */
+    --bg-primary: #f5f5f5;
+    --text-primary: #1a1a1a;
 }
 
-[data-theme="light"] {
-    --bg-primary: #f5f5f5;
-    /* ... */
+[data-theme="dark"] {
+    /* Dark theme override */
+    --bg-primary: #1e222d;
+    --text-primary: #e0e0e0;
 }
 ```
 
-### Layout
-- Flexbox-based full-height layout
-- Two-column design: sidebar (240px) + editor (flex: 1)
-- Responsive: sidebar collapses on mobile
+## Development vs Production
 
----
-
-## Formatting Commands
-
-Uses `document.execCommand()` for text formatting:
-
-| Command | Usage |
-|---------|-------|
-| `bold` | Toggle bold |
-| `italic` | Toggle italic |
-| `underline` | Toggle underline |
-| `strikeThrough` | Toggle strikethrough |
-| `formatBlock` | Apply heading (h1, h2) |
-| `insertUnorderedList` | Create bullet list |
-| `foreColor` | Change text color |
-| `hiliteColor` | Change highlight color |
-
-**Note**: `execCommand` is deprecated but widely supported. Future versions may migrate to the Selection/Range API.
-
----
-
-## localStorage Schema
-
-| Key | Format | Description |
-|-----|--------|-------------|
-| `webnotes_YYYY-MM-DD` | HTML string | Note content for date |
-| `webnotes_theme` | `"dark"` or `"light"` | User theme preference |
-
----
-
-## Future Improvements
-
-1. **Selection API Migration**: Replace execCommand with modern APIs
-2. **IndexedDB**: For larger storage capacity
-3. **Export Formats**: Markdown, PDF export
-4. **Search**: Full-text search across all notes
-5. **Tags**: Categorize and filter notes
-6. **Sync**: Optional cloud sync with encryption
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Location | `~/Desktop/Web Notes` | `/opt/webnotes` |
+| Command | `webnotes-dev` | `webnotes-deploy` |
+| Port | 8889 | 8888 |
+| Hot Reload | ✅ Yes | ❌ No |
+| Requires Login | ✅ Yes | ❌ No |

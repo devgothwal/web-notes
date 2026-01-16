@@ -1,59 +1,76 @@
 ---
-description: How to develop and run Web Notes application
+description: Web Notes - Development and deployment workflow
 ---
 
-# Web Notes Development Workflow
+# Web Notes Project
 
-## Project Overview
-Web Notes is a date-based notes application with rich text formatting and Forex Factory-inspired design.
+A notes-taking web app with calendar navigation, multiple notes per day, and cross-browser sync.
 
-**Location**: `/home/gothwal/Desktop/Web Notes`
-**GitHub**: https://github.com/devgothwal/web-notes
+## Quick Commands
 
-## Running the Application
+| Command | Description |
+|---------|-------------|
+| `webnotes-dev` | Start dev server (port 8889, hot reload) |
+| `webnotes-deploy` | Deploy to production (port 8888) |
 
-// turbo
-1. Start the development server:
+## URLs
+
+| Environment | URL |
+|-------------|-----|
+| Development | http://100.121.166.123:8889/ |
+| Production | http://100.121.166.123:8888/ |
+
+## Development Workflow
+
 ```bash
-cd "/home/gothwal/Desktop/Web Notes"
-python3 -m http.server 8888
-```
+# 1. Start dev server
+webnotes-dev
 
-2. Access via Tailscale IP: http://100.121.166.123:8888/
+# 2. Edit files in ~/Desktop/Web Notes/
+#    Changes appear instantly (hot reload)
+
+# 3. When ready, deploy to production
+webnotes-deploy
+```
 
 ## Project Structure
-- `index.html` - Main single-page application
-- `styles/main.css` - All styling with CSS variables
-- `scripts/app.js` - Main controller
-- `scripts/calendar.js` - Calendar component
-- `scripts/editor.js` - Rich text editor
 
-## Key Features
-- Calendar-based note navigation (one note per day)
-- Rich formatting: H1, H2, Bold, Italic, Underline, Strikethrough
-- Bullet lists and checkboxes
-- Text color and highlight
-- Autosave to localStorage
-- Dark/Light theme toggle
+```
+~/Desktop/Web Notes/     ← Development (edit here)
+├── index.html           ← Main HTML
+├── styles/main.css      ← Styling (light/dark themes)
+├── scripts/
+│   ├── app.js           ← Main controller
+│   ├── calendar.js      ← Calendar component
+│   └── editor.js        ← Rich text editor + API
+├── backend/
+│   └── app.py           ← FastAPI + SQLite
+├── dev.sh               ← Dev server script
+├── deploy.sh            ← Deploy script
+├── Dockerfile           ← Production container
+├── Dockerfile.dev       ← Dev container
+└── docker-compose.yml   ← Container orchestration
 
-## Making Changes
-
-1. Edit files directly - no build step required
-2. Refresh browser to see changes
-3. Notes persist in localStorage
-
-## Pushing Updates
-
-// turbo
-1. Stage and commit changes:
-```bash
-git add -A
-git commit -m "Your commit message"
-git push
+/opt/webnotes/           ← Production (auto-deployed)
 ```
 
-## Design Guidelines
-- Follow Forex Factory aesthetic: utility-first, clean, minimal
-- Use CSS variables for any new colors
-- Keep dark theme as default
-- No flashy animations - subtle transitions only
+## Key Features
+
+- **Multiple notes per day** with titles
+- **Cross-browser sync** via SQLite backend
+- **Light theme default** (dark mode available)
+- **Hot reload** for development
+- **24/7 available** even without login (Docker in /opt)
+- **Auto-deploy** with single command
+
+## Database
+
+- **Dev:** `/var/opt/webnotes/notes.db`
+- **Prod (Docker):** Docker volume `webnotes-data`
+
+## Tech Stack
+
+- Frontend: Vanilla HTML/CSS/JS
+- Backend: FastAPI + SQLite
+- Deployment: Docker + docker-compose
+- Server: Uvicorn
