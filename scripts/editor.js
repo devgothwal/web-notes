@@ -36,6 +36,14 @@ class Editor {
 
         this.titleInput.addEventListener('input', () => this.scheduleAutosave());
 
+        // Press Enter in title to move to editor
+        this.titleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.editor.focus();
+            }
+        });
+
         document.getElementById('text-color').addEventListener('input', (e) => {
             document.execCommand('foreColor', false, e.target.value);
             this.editor.focus();
