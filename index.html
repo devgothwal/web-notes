@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Notes</title>
+    <meta name="description" content="A simple, functional notes app with calendar navigation and rich formatting">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <span class="app-logo">📝</span>
+                <h1 class="app-title">Web Notes</h1>
+            </div>
+            <div class="header-right">
+                <button id="btn-save" class="header-btn" title="Save as file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                        <polyline points="17,21 17,13 7,13 7,21"/>
+                        <polyline points="7,3 7,8 15,8"/>
+                    </svg>
+                    <span>Save</span>
+                </button>
+                <button id="btn-print" class="header-btn" title="Print notes">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 6,2 18,2 18,9"/>
+                        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    <span>Print</span>
+                </button>
+                <button id="btn-theme" class="header-btn icon-only" title="Toggle theme">
+                    <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                    </svg>
+                    <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Calendar Sidebar -->
+            <aside class="sidebar">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button id="btn-prev-month" class="calendar-nav" title="Previous month">◀</button>
+                        <span id="calendar-month-year" class="calendar-title">January 2026</span>
+                        <button id="btn-next-month" class="calendar-nav" title="Next month">▶</button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div id="calendar-grid" class="calendar-grid">
+                        <!-- Days populated by JS -->
+                    </div>
+                    <button id="btn-today" class="btn-today">Today</button>
+                </div>
+                <div class="sidebar-legend">
+                    <span class="legend-item"><span class="dot has-notes"></span> Has notes</span>
+                </div>
+            </aside>
+
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <!-- Toolbar -->
+                <div class="editor-toolbar">
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="formatBlock" data-value="h1" title="Heading 1">H1</button>
+                        <button class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading 2">H2</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                        <button class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+                        <button class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button class="toolbar-btn" data-command="strikeThrough" title="Strikethrough"><s>S</s></button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
+                        <button class="toolbar-btn" data-command="checkbox" title="Insert Checkbox">☑</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group color-group">
+                        <label class="toolbar-btn color-btn" title="Text Color">
+                            <span class="color-icon">A</span>
+                            <input type="color" id="text-color" value="#e0e0e0" class="color-picker">
+                        </label>
+                        <label class="toolbar-btn color-btn" title="Highlight Color">
+                            <span class="highlight-icon">🖍</span>
+                            <input type="color" id="highlight-color" value="#4a90d9" class="color-picker">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date Display -->
+                <div class="editor-date">
+                    <span id="current-date-display">Thursday, January 16, 2026</span>
+                </div>
+
+                <!-- Editor -->
+                <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Start writing your notes..."></div>
+            </div>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="word-count">Words: 0</span>
+                <span class="status-divider">|</span>
+                <span id="char-count">Characters: 0</span>
+            </div>
+            <div class="status-right">
+                <span id="save-status">Autosaved: Never</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="scripts/calendar.js"></script>
+    <script src="scripts/editor.js"></script>
+    <script src="scripts/app.js"></script>
+</body>
+</html>
