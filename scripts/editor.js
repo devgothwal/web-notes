@@ -1,18 +1,24 @@
 /**
- * Editor Component
- * Handles rich text formatting, autosave, and word counting
+ * Editor Component - Multi-Note Version
+ * Handles multiple notes per day with titles
  */
 
 class Editor {
     constructor(options = {}) {
         this.editor = document.getElementById('editor');
+        this.titleInput = document.getElementById('note-title');
         this.dateDisplay = document.getElementById('current-date-display');
         this.wordCountEl = document.getElementById('word-count');
         this.charCountEl = document.getElementById('char-count');
         this.saveStatusEl = document.getElementById('save-status');
+        this.notesListEl = document.getElementById('notes-list');
+        this.notesCountEl = document.getElementById('notes-count');
+        this.notesListDateEl = document.getElementById('notes-list-date');
 
         this.storagePrefix = 'webnotes_';
         this.currentDateKey = null;
+        this.currentNoteId = null;
+        this.notes = []; // Notes for current date
         this.saveTimeout = null;
         this.lastSaved = null;
 
@@ -29,6 +35,9 @@ class Editor {
         this.editor.addEventListener('input', () => this.handleInput());
         this.editor.addEventListener('keydown', (e) => this.handleKeydown(e));
         this.editor.addEventListener('paste', (e) => this.handlePaste(e));
+
+        // Set up title input
+        this.titleInput.addEventListener('input', () => this.scheduleAutosave());
 
         // Set up color pickers
         document.getElementById('text-color').addEventListener('input', (e) => {
@@ -75,7 +84,6 @@ class Editor {
             range.deleteContents();
             range.insertNode(checkbox);
 
-            // Move cursor to the span
             const span = checkbox.querySelector('span');
             range.selectNodeContents(span);
             selection.removeAllRanges();
@@ -94,7 +102,6 @@ class Editor {
     }
 
     handleKeydown(e) {
-        // Handle keyboard shortcuts
         if (e.ctrlKey || e.metaKey) {
             switch (e.key.toLowerCase()) {
                 case 'b':
@@ -116,7 +123,6 @@ class Editor {
             }
         }
 
-        // Handle Tab for indentation
         if (e.key === 'Tab') {
             e.preventDefault();
             document.execCommand('insertText', false, '    ');
@@ -124,17 +130,11 @@ class Editor {
     }
 
     handlePaste(e) {
-        // Clean up pasted content to avoid weird formatting
         e.preventDefault();
         const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
-
-        // Create a temporary element to clean the HTML
         const temp = document.createElement('div');
         temp.innerHTML = text;
-
-        // Remove scripts and styles
         temp.querySelectorAll('script, style').forEach(el => el.remove());
-
         document.execCommand('insertHTML', false, temp.innerHTML);
     }
 
@@ -154,24 +154,52 @@ class Editor {
 
         this.saveTimeout = setTimeout(() => {
             this.saveNow();
-        }, 1000); // Save after 1 second of inactivity
+        }, 1000);
+    }
+
+    generateNoteId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     }
 
     saveNow() {
-        if (!this.currentDateKey) return;
+        if (!this.currentDateKey || !this.currentNoteId) return;
 
         const content = this.editor.innerHTML;
+        const title = this.titleInput.value.trim() || 'Untitled Note';
+
+        // Find and update the current note
+        const noteIndex = this.notes.findIndex(n => n.id === this.currentNoteId);
+
+        if (noteIndex >= 0) {
+            this.notes[noteIndex].title = title;
+            this.notes[noteIndex].content = content;
+            this.notes[noteIndex].updatedAt = new Date().toISOString();
+        }
+
+        // Save all notes for this date
+        this.saveNotesToStorage();
+
+        // Update notes list UI
+        this.renderNotesList();
+
+        this.lastSaved = new Date();
+        this.updateSaveStatus();
+    }
+
+    saveNotesToStorage() {
         const key = this.storagePrefix + this.currentDateKey;
 
         try {
-            if (content.trim() && content !== '<br>') {
-                localStorage.setItem(key, content);
+            // Filter out empty notes before saving
+            const notesToSave = this.notes.filter(n =>
+                n.content.trim() && n.content !== '<br>'
+            );
+
+            if (notesToSave.length > 0) {
+                localStorage.setItem(key, JSON.stringify(notesToSave));
             } else {
                 localStorage.removeItem(key);
             }
-
-            this.lastSaved = new Date();
-            this.updateSaveStatus();
         } catch (e) {
             console.error('Failed to save:', e);
             this.saveStatusEl.textContent = 'Save failed!';
@@ -193,7 +221,7 @@ class Editor {
 
     loadDate(date) {
         // Save current content first
-        if (this.currentDateKey) {
+        if (this.currentDateKey && this.currentNoteId) {
             this.saveNow();
         }
 
@@ -207,25 +235,165 @@ class Editor {
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         this.dateDisplay.textContent = date.toLocaleDateString('en-US', options);
 
-        // Load content
-        const key = this.storagePrefix + this.currentDateKey;
-        const content = localStorage.getItem(key);
-
-        if (content) {
-            this.editor.innerHTML = content;
+        // Update notes list header
+        const today = new Date();
+        if (date.toDateString() === today.toDateString()) {
+            this.notesListDateEl.textContent = "Today's Notes";
         } else {
-            this.editor.innerHTML = '';
+            this.notesListDateEl.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
-        // Update word count
+        // Load notes for this date
+        const key = this.storagePrefix + this.currentDateKey;
+        const stored = localStorage.getItem(key);
+
+        if (stored) {
+            try {
+                this.notes = JSON.parse(stored);
+            } catch {
+                // Legacy single-note format - migrate it
+                this.notes = [{
+                    id: this.generateNoteId(),
+                    title: 'Migrated Note',
+                    content: stored,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }];
+                this.saveNotesToStorage();
+            }
+        } else {
+            this.notes = [];
+        }
+
+        // Render notes list
+        this.renderNotesList();
+
+        // Select first note or create new one
+        if (this.notes.length > 0) {
+            this.selectNote(this.notes[0].id);
+        } else {
+            this.createNewNote(false);
+        }
+    }
+
+    renderNotesList() {
+        // Update count
+        this.notesCountEl.textContent = this.notes.length;
+
+        if (this.notes.length === 0) {
+            this.notesListEl.innerHTML = '<div class="notes-empty">No notes for this day</div>';
+            return;
+        }
+
+        let html = '';
+        for (const note of this.notes) {
+            const isActive = note.id === this.currentNoteId;
+            const time = new Date(note.updatedAt || note.createdAt).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            html += `
+                <div class="note-item ${isActive ? 'active' : ''}" data-note-id="${note.id}">
+                    <span class="note-item-icon">📄</span>
+                    <div class="note-item-content">
+                        <div class="note-item-title">${this.escapeHtml(note.title || 'Untitled')}</div>
+                        <div class="note-item-time">${time}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        this.notesListEl.innerHTML = html;
+
+        // Add click handlers
+        this.notesListEl.querySelectorAll('.note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const noteId = item.dataset.noteId;
+                if (noteId !== this.currentNoteId) {
+                    this.saveNow();
+                    this.selectNote(noteId);
+                }
+            });
+        });
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    selectNote(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return;
+
+        this.currentNoteId = noteId;
+        this.titleInput.value = note.title || '';
+        this.editor.innerHTML = note.content || '';
+
         this.updateWordCount();
+        this.renderNotesList();
 
-        // Reset save status
         this.lastSaved = null;
-        this.saveStatusEl.textContent = content ? 'Loaded' : 'New note';
+        this.saveStatusEl.textContent = 'Loaded';
 
-        // Focus editor
         this.editor.focus();
+    }
+
+    createNewNote(focus = true) {
+        // Save current note first
+        if (this.currentNoteId) {
+            this.saveNow();
+        }
+
+        const newNote = {
+            id: this.generateNoteId(),
+            title: '',
+            content: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        this.notes.unshift(newNote);
+        this.currentNoteId = newNote.id;
+
+        this.titleInput.value = '';
+        this.editor.innerHTML = '';
+
+        this.updateWordCount();
+        this.renderNotesList();
+        this.saveNotesToStorage();
+
+        this.lastSaved = null;
+        this.saveStatusEl.textContent = 'New note';
+
+        if (focus) {
+            this.titleInput.focus();
+        }
+    }
+
+    deleteCurrentNote() {
+        if (!this.currentNoteId) return;
+
+        const noteIndex = this.notes.findIndex(n => n.id === this.currentNoteId);
+        if (noteIndex < 0) return;
+
+        const noteTitle = this.notes[noteIndex].title || 'this note';
+        if (!confirm(`Delete "${noteTitle}"?`)) return;
+
+        this.notes.splice(noteIndex, 1);
+        this.saveNotesToStorage();
+
+        // Select another note or create new
+        if (this.notes.length > 0) {
+            this.selectNote(this.notes[0].id);
+        } else {
+            this.createNewNote(false);
+        }
+
+        this.onContentChange();
     }
 
     getNoteDates() {
@@ -234,9 +402,20 @@ class Editor {
             const key = localStorage.key(i);
             if (key.startsWith(this.storagePrefix)) {
                 const dateKey = key.replace(this.storagePrefix, '');
-                // Only include date keys (YYYY-MM-DD format)
                 if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
-                    dates.push(dateKey);
+                    const value = localStorage.getItem(key);
+                    // Check if it has content
+                    try {
+                        const notes = JSON.parse(value);
+                        if (notes.length > 0) {
+                            dates.push(dateKey);
+                        }
+                    } catch {
+                        // Legacy format - still has content
+                        if (value && value.trim()) {
+                            dates.push(dateKey);
+                        }
+                    }
                 }
             }
         }
@@ -253,9 +432,9 @@ class Editor {
 
     clear() {
         this.editor.innerHTML = '';
+        this.titleInput.value = '';
         this.updateWordCount();
     }
 }
 
-// Export for use in app.js
 window.Editor = Editor;
