@@ -164,24 +164,43 @@
                     </div>
                     <div class="toolbar-divider"></div>
                     <div class="toolbar-group color-group">
-                        <label class="toolbar-btn color-btn" title="Text Color">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 20h16"></path>
-                                <path d="M12 4v16"></path>
-                                <path d="M9 4h6"></path>
-                            </svg>
-                            <input type="color" id="text-color" value="#333333" class="color-picker">
-                        </label>
-                        <label class="toolbar-btn color-btn" title="Highlight Color">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                                <path d="M2 2l7.586 7.586"></path>
-                            </svg>
-                            <input type="color" id="highlight-color" value="#ffeb3b" class="color-picker">
-                        </label>
+                        <div class="dropdown-wrapper">
+                            <button class="toolbar-btn color-btn" id="btn-text-color" title="Text Color">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 20h16"></path>
+                                    <path d="M12 4v16"></path>
+                                    <path d="M9 4h6"></path>
+                                </svg>
+                            </button>
+                            <div class="color-dropdown" id="dropdown-text">
+                                <button data-color="#000000" style="background:#000000"></button>
+                                <button data-color="#e74c3c" style="background:#e74c3c"></button>
+                                <button data-color="#3498db" style="background:#3498db"></button>
+                                <button data-color="#2ecc71" style="background:#2ecc71"></button>
+                                <button data-color="#f1c40f" style="background:#f1c40f"></button>
+                                <button data-color="#9b59b6" style="background:#9b59b6"></button>
+                            </div>
+                        </div>
+                        <div class="dropdown-wrapper">
+                            <button class="toolbar-btn color-btn" id="btn-highlight-color" title="Highlight Color">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                    <path d="M2 2l7.586 7.586"></path>
+                                </svg>
+                            </button>
+                            <div class="color-dropdown" id="dropdown-highlight">
+                                <button data-color="transparent"
+                                    style="background:white; border:1px solid #ddd"></button> <!-- Clear -->
+                                <button data-color="#fff176" style="background:#fff176"></button> <!-- Yellow -->
+                                <button data-color="#81d4fa" style="background:#81d4fa"></button> <!-- Blue -->
+                                <button data-color="#a5d6a7" style="background:#a5d6a7"></button> <!-- Green -->
+                                <button data-color="#ffcc80" style="background:#ffcc80"></button> <!-- Orange -->
+                                <button data-color="#f48fb1" style="background:#f48fb1"></button> <!-- Pink -->
+                            </div>
+                        </div>
                     </div>
                     <div class="toolbar-spacer"></div>
                     <button id="btn-delete-note" class="toolbar-btn danger" title="Delete this note">

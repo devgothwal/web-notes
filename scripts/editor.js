@@ -29,6 +29,8 @@ class Editor {
 
     init() {
         this.setupToolbar();
+        // Use CSS for styling (better for spans/backgrounds)
+        document.execCommand('styleWithCSS', false, true);
 
         this.editor.addEventListener('input', () => this.handleInput());
         this.editor.addEventListener('keydown', (e) => this.handleKeydown(e));
@@ -48,14 +50,104 @@ class Editor {
             }
         });
 
-        document.getElementById('text-color').addEventListener('input', (e) => {
-            document.execCommand('foreColor', false, e.target.value);
-            this.editor.focus();
-        });
+        // Color Toggle Logic
+        const initColorDropdown = (btnId, dropdownId, command, iconSelector) => {
+            const btn = document.getElementById(btnId);
+            const dropdown = document.getElementById(dropdownId);
 
-        document.getElementById('highlight-color').addEventListener('input', (e) => {
-            document.execCommand('hiliteColor', false, e.target.value);
-            this.editor.focus();
+            // Toggle Dropdown OR Toggle Highlight (if active)
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // Special Logic for Highlighter: If active, turn OFF
+                if (dropdownId === 'dropdown-highlight') {
+                    // Check logic state OR visual state (more reliable for user expectation)
+                    const backColor = document.queryCommandValue('backColor');
+                    const isLogicActive = backColor &&
+                        backColor !== 'transparent' &&
+                        backColor !== 'rgba(0, 0, 0, 0)' &&
+                        backColor !== 'rgb(255, 255, 255)';
+
+                    if (isLogicActive || btn.classList.contains('active')) {
+                        // Turn OFF Highlight
+                        this.editor.focus(); // Ensure focus matches selection
+
+                        const sel = window.getSelection();
+                        if (sel.rangeCount > 0) {
+                            const range = sel.getRangeAt(0);
+
+                            // BREAKOUT Logic for Cursor (Collapsed Selection)
+                            if (range.collapsed) {
+                                // Insert a "stopper" span to break the style inheritance
+                                // Using ZWSP (Zero Width Space)
+                                document.execCommand('insertHTML', false, '<span style="background-color: transparent">&#8203;</span>');
+                            } else {
+                                // Normal Unhighlight for selection
+                                document.execCommand('hiliteColor', false, 'transparent');
+                            }
+
+                            btn.classList.remove('active');
+                            dropdown.classList.remove('show');
+                            return;
+                        }
+                    }
+                }
+
+                // Normal behavior: Open Dropdown
+                // Close others
+                document.querySelectorAll('.color-dropdown').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('show');
+                });
+
+                const isOpen = dropdown.classList.toggle('show');
+                if (isOpen) {
+                    // Save selection when opening
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        this.savedRange = sel.getRangeAt(0);
+                    }
+                }
+            });
+
+            // Handle Color Selection
+            dropdown.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    e.stopPropagation();
+                    const color = e.target.dataset.color;
+
+                    // Restore Selection
+                    this.editor.focus();
+                    if (this.savedRange) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(this.savedRange);
+                    }
+
+                    // Execute Command
+                    document.execCommand(command, false, color);
+
+                    // Update Icon Color
+                    const icon = btn.querySelector('svg');
+                    if (icon) icon.style.color = color;
+
+                    // Close Dropdown
+                    dropdown.classList.remove('show');
+
+                    // Save new position
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        this.savedRange = sel.getRangeAt(0);
+                    }
+                }
+            });
+        };
+
+        initColorDropdown('btn-text-color', 'dropdown-text', 'foreColor');
+        initColorDropdown('btn-highlight-color', 'dropdown-highlight', 'hiliteColor');
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.color-dropdown').forEach(d => d.classList.remove('show'));
         });
     }
 
@@ -113,6 +205,34 @@ class Editor {
                 btn.classList.remove('active');
             }
         });
+
+        // Check Highlight active state
+        const highlightBtn = document.getElementById('btn-highlight-color');
+        if (highlightBtn) {
+            // 'backColor' is the standard for background color
+            const backColor = document.queryCommandValue('backColor');
+            // Check if it's set and not transparent/white/inherited
+            const isHighlightActive = backColor &&
+                backColor !== 'transparent' &&
+                backColor !== 'rgba(0, 0, 0, 0)' &&
+                backColor !== 'rgb(255, 255, 255)'; // Assuming white is default
+
+            if (isHighlightActive) highlightBtn.classList.add('active');
+            else highlightBtn.classList.remove('active');
+        }
+
+        // Check Text Color active state (Optional, but consistent)
+        const colorBtn = document.getElementById('btn-text-color');
+        if (colorBtn) {
+            const foreColor = document.queryCommandValue('foreColor');
+            // Default usually black or rgb(0,0,0) or user theme
+            // It's harder to define "active" for text color, usually strictly "not default"
+            // But usually we just show the color on the icon (already done).
+            // User specifically asked for highlighter light up.
+            // I'll ignore text color 'active' background state unless requested, to avoid noise.
+            // Actually user said "fix the text colour and higlight clour".
+            // Let's do highlight first as explicitly requested.
+        }
     }
 
     insertCheckbox() {
