@@ -179,6 +179,12 @@ async def serve_index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+# Serve favicon
+@app.get("/favicon.svg")
+async def serve_favicon():
+    return FileResponse(STATIC_DIR / "favicon.svg", media_type="image/svg+xml")
+
+
 # Mount static directories (only if they exist)
 def mount_if_exists(path: str, directory: Path, name: str):
     """Mount a static directory only if it exists"""

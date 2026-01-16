@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a90d9"/>
+      <stop offset="100%" style="stop-color:#357abd"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#bg)"/>
+  <!-- Paper -->
+  <rect x="14" y="10" width="36" height="44" rx="3" fill="white"/>
+  <!-- Lines -->
+  <line x1="20" y1="22" x2="44" y2="22" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20" y1="30" x2="40" y2="30" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20" y1="38" x2="36" y2="38" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Pencil -->
+  <g transform="rotate(45, 48, 48)">
+    <rect x="44" y="30" width="8" height="24" rx="1" fill="#f5a623"/>
+    <polygon points="44,54 48,62 52,54" fill="#333"/>
+    <rect x="44" y="30" width="8" height="4" fill="#e74c3c"/>
+  </g>
+</svg>
