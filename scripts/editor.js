@@ -1,6 +1,6 @@
 /**
- * Editor Component - Multi-Note Version
- * Handles multiple notes per day with titles
+ * Editor Component - API-backed Version
+ * Uses FastAPI backend for cross-browser sync
  */
 
 class Editor {
@@ -15,12 +15,12 @@ class Editor {
         this.notesCountEl = document.getElementById('notes-count');
         this.notesListDateEl = document.getElementById('notes-list-date');
 
-        this.storagePrefix = 'webnotes_';
         this.currentDateKey = null;
         this.currentNoteId = null;
-        this.notes = []; // Notes for current date
+        this.notes = [];
         this.saveTimeout = null;
         this.lastSaved = null;
+        this.isSaving = false;
 
         this.onContentChange = options.onContentChange || (() => { });
 
@@ -28,18 +28,14 @@ class Editor {
     }
 
     init() {
-        // Set up toolbar buttons
         this.setupToolbar();
 
-        // Set up editor events
         this.editor.addEventListener('input', () => this.handleInput());
         this.editor.addEventListener('keydown', (e) => this.handleKeydown(e));
         this.editor.addEventListener('paste', (e) => this.handlePaste(e));
 
-        // Set up title input
         this.titleInput.addEventListener('input', () => this.scheduleAutosave());
 
-        // Set up color pickers
         document.getElementById('text-color').addEventListener('input', (e) => {
             document.execCommand('foreColor', false, e.target.value);
             this.editor.focus();
@@ -161,50 +157,65 @@ class Editor {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     }
 
-    saveNow() {
-        if (!this.currentDateKey || !this.currentNoteId) return;
+    async saveNow() {
+        if (!this.currentDateKey || !this.currentNoteId || this.isSaving) return;
 
+        this.isSaving = true;
         const content = this.editor.innerHTML;
         const title = this.titleInput.value.trim() || 'Untitled Note';
+        const updatedAt = new Date().toISOString();
 
-        // Find and update the current note
+        // Find and update local state
         const noteIndex = this.notes.findIndex(n => n.id === this.currentNoteId);
-
         if (noteIndex >= 0) {
             this.notes[noteIndex].title = title;
             this.notes[noteIndex].content = content;
-            this.notes[noteIndex].updatedAt = new Date().toISOString();
+            this.notes[noteIndex].updated_at = updatedAt;
         }
 
-        // Save all notes for this date
-        this.saveNotesToStorage();
-
-        // Update notes list UI
-        this.renderNotesList();
-
-        this.lastSaved = new Date();
-        this.updateSaveStatus();
-    }
-
-    saveNotesToStorage() {
-        const key = this.storagePrefix + this.currentDateKey;
-
         try {
-            // Filter out empty notes before saving
-            const notesToSave = this.notes.filter(n =>
-                n.content.trim() && n.content !== '<br>'
-            );
+            // Check if note exists in DB
+            const existingNote = noteIndex >= 0 && this.notes[noteIndex]._persisted;
 
-            if (notesToSave.length > 0) {
-                localStorage.setItem(key, JSON.stringify(notesToSave));
+            if (existingNote) {
+                // Update existing note
+                await fetch(`/api/notes/${this.currentNoteId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content, updated_at: updatedAt })
+                });
             } else {
-                localStorage.removeItem(key);
+                // Create new note
+                const note = this.notes[noteIndex];
+                await fetch('/api/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: note.id,
+                        date_key: this.currentDateKey,
+                        title: title,
+                        content: content,
+                        created_at: note.created_at,
+                        updated_at: updatedAt
+                    })
+                });
+                // Mark as persisted
+                if (noteIndex >= 0) {
+                    this.notes[noteIndex]._persisted = true;
+                }
             }
-        } catch (e) {
-            console.error('Failed to save:', e);
+
+            this.lastSaved = new Date();
+            this.updateSaveStatus();
+            this.renderNotesList();
+
+        } catch (error) {
+            console.error('Save failed:', error);
             this.saveStatusEl.textContent = 'Save failed!';
             this.saveStatusEl.style.color = 'var(--accent-danger)';
         }
+
+        this.isSaving = false;
     }
 
     updateSaveStatus() {
@@ -214,15 +225,15 @@ class Editor {
                 minute: '2-digit',
                 hour12: true
             });
-            this.saveStatusEl.textContent = `Autosaved: ${time}`;
+            this.saveStatusEl.textContent = `Synced: ${time}`;
             this.saveStatusEl.style.color = 'var(--accent-success)';
         }
     }
 
-    loadDate(date) {
+    async loadDate(date) {
         // Save current content first
         if (this.currentDateKey && this.currentNoteId) {
-            this.saveNow();
+            await this.saveNow();
         }
 
         // Format date key
@@ -243,25 +254,13 @@ class Editor {
             this.notesListDateEl.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
-        // Load notes for this date
-        const key = this.storagePrefix + this.currentDateKey;
-        const stored = localStorage.getItem(key);
-
-        if (stored) {
-            try {
-                this.notes = JSON.parse(stored);
-            } catch {
-                // Legacy single-note format - migrate it
-                this.notes = [{
-                    id: this.generateNoteId(),
-                    title: 'Migrated Note',
-                    content: stored,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }];
-                this.saveNotesToStorage();
-            }
-        } else {
+        // Load notes from API
+        try {
+            const response = await fetch(`/api/notes/${this.currentDateKey}`);
+            const data = await response.json();
+            this.notes = data.map(n => ({ ...n, _persisted: true }));
+        } catch (error) {
+            console.error('Failed to load notes:', error);
             this.notes = [];
         }
 
@@ -277,7 +276,6 @@ class Editor {
     }
 
     renderNotesList() {
-        // Update count
         this.notesCountEl.textContent = this.notes.length;
 
         if (this.notes.length === 0) {
@@ -288,7 +286,7 @@ class Editor {
         let html = '';
         for (const note of this.notes) {
             const isActive = note.id === this.currentNoteId;
-            const time = new Date(note.updatedAt || note.createdAt).toLocaleTimeString('en-US', {
+            const time = new Date(note.updated_at || note.created_at).toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
@@ -307,7 +305,6 @@ class Editor {
 
         this.notesListEl.innerHTML = html;
 
-        // Add click handlers
         this.notesListEl.querySelectorAll('.note-item').forEach(item => {
             item.addEventListener('click', () => {
                 const noteId = item.dataset.noteId;
@@ -343,17 +340,18 @@ class Editor {
     }
 
     createNewNote(focus = true) {
-        // Save current note first
         if (this.currentNoteId) {
             this.saveNow();
         }
 
         const newNote = {
             id: this.generateNoteId(),
+            date_key: this.currentDateKey,
             title: '',
             content: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            _persisted: false
         };
 
         this.notes.unshift(newNote);
@@ -364,7 +362,6 @@ class Editor {
 
         this.updateWordCount();
         this.renderNotesList();
-        this.saveNotesToStorage();
 
         this.lastSaved = null;
         this.saveStatusEl.textContent = 'New note';
@@ -374,7 +371,7 @@ class Editor {
         }
     }
 
-    deleteCurrentNote() {
+    async deleteCurrentNote() {
         if (!this.currentNoteId) return;
 
         const noteIndex = this.notes.findIndex(n => n.id === this.currentNoteId);
@@ -383,10 +380,17 @@ class Editor {
         const noteTitle = this.notes[noteIndex].title || 'this note';
         if (!confirm(`Delete "${noteTitle}"?`)) return;
 
-        this.notes.splice(noteIndex, 1);
-        this.saveNotesToStorage();
+        // Delete from server if persisted
+        if (this.notes[noteIndex]._persisted) {
+            try {
+                await fetch(`/api/notes/${this.currentNoteId}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('Failed to delete:', error);
+            }
+        }
 
-        // Select another note or create new
+        this.notes.splice(noteIndex, 1);
+
         if (this.notes.length > 0) {
             this.selectNote(this.notes[0].id);
         } else {
@@ -396,30 +400,14 @@ class Editor {
         this.onContentChange();
     }
 
-    getNoteDates() {
-        const dates = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith(this.storagePrefix)) {
-                const dateKey = key.replace(this.storagePrefix, '');
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
-                    const value = localStorage.getItem(key);
-                    // Check if it has content
-                    try {
-                        const notes = JSON.parse(value);
-                        if (notes.length > 0) {
-                            dates.push(dateKey);
-                        }
-                    } catch {
-                        // Legacy format - still has content
-                        if (value && value.trim()) {
-                            dates.push(dateKey);
-                        }
-                    }
-                }
-            }
+    async getNoteDates() {
+        try {
+            const response = await fetch('/api/dates');
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to get dates:', error);
+            return [];
         }
-        return dates;
     }
 
     getContent() {

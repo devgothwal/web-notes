@@ -14,7 +14,8 @@ class Calendar {
         this.currentDate = new Date();
         this.selectedDate = new Date();
         this.onDateSelect = options.onDateSelect || (() => { });
-        this.getNoteDates = options.getNoteDates || (() => []);
+        this.getNoteDates = options.getNoteDates || (async () => []);
+        this.noteDatesCache = [];
 
         this.months = [
             'January', 'February', 'March', 'April', 'May', 'June',
@@ -71,13 +72,18 @@ class Calendar {
             date1.getFullYear() === date2.getFullYear();
     }
 
-    render() {
+    async render() {
         // Update month/year display
         this.monthYearDisplay.textContent =
             `${this.months[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
 
-        // Get dates with notes
-        const noteDates = this.getNoteDates();
+        // Get dates with notes (async)
+        try {
+            this.noteDatesCache = await this.getNoteDates();
+        } catch (e) {
+            console.error('Failed to get note dates:', e);
+        }
+        const noteDates = this.noteDatesCache;
 
         // Calculate calendar grid
         const year = this.currentDate.getFullYear();

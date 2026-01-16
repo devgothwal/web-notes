@@ -1,0 +1,17 @@
+[Unit]
+Description=Web Notes - FastAPI Backend
+After=network.target
+
+[Service]
+Type=simple
+User=gothwal
+WorkingDirectory=/home/gothwal/Desktop/Web Notes
+ExecStart=/home/gothwal/Desktop/Web Notes/venv/bin/python -m uvicorn backend.app:app --host 0.0.0.0 --port 8888
+Restart=always
+RestartSec=5
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
