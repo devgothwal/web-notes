@@ -467,9 +467,11 @@ body {
 .editor-toolbar {
     display: flex;
     align-items: center;
-    gap: var(--space-xs);
-    padding: var(--space-sm) var(--space-lg);
-    background: var(--bg-secondary);
+    gap: 4px;
+    /* Tighter gap */
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    /* Blend with editor */
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
     flex-wrap: wrap;
@@ -477,30 +479,35 @@ body {
 
 .toolbar-group {
     display: flex;
+    align-items: center;
     gap: 2px;
+    background: var(--bg-secondary);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
 }
 
 .toolbar-divider {
-    width: 1px;
-    height: 24px;
-    background: var(--border-subtle);
-    margin: 0 var(--space-sm);
+    display: none;
+    /* remove dividers, use groups */
 }
 
 .toolbar-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 32px;
+    width: 32px;
     height: 32px;
-    padding: 0 var(--space-sm);
+    padding: 0;
     background: transparent;
-    border: 1px solid transparent;
+    border: none;
     border-radius: 4px;
     color: var(--text-secondary);
-    font-size: var(--font-size-base);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.1s ease;
 }
 
 .toolbar-btn:hover {
@@ -508,23 +515,76 @@ body {
     color: var(--text-primary);
 }
 
+.toolbar-btn:active,
+.toolbar-btn.active {
+    background: #e1f5fe;
+    /* Light blue active state */
+    color: #0277bd;
+}
+
+/* Specific button tweaks */
+.toolbar-btn[data-value="h1"] {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.toolbar-btn[data-value="h2"] {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.toolbar-btn strong {
+    font-weight: 700;
+}
+
+.toolbar-btn em {
+    font-style: italic;
+    font-family: 'Georgia', serif;
+}
+
+.toolbar-btn u {
+    text-decoration: underline;
+}
+
+.toolbar-btn s {
+    text-decoration: line-through;
+}
+
 .toolbar-btn.danger {
     color: var(--accent-danger);
+    margin-left: auto;
+    /* Push to right if spacer fails */
 }
 
 .toolbar-btn.danger:hover {
-    background: var(--accent-danger);
-    color: white;
+    background: #ffebee;
+    color: #c62828;
 }
 
 .toolbar-spacer {
     flex: 1;
 }
 
-.toolbar-btn:active,
-.toolbar-btn.active {
-    background: var(--accent-primary);
-    color: white;
+/* Color Picker fix */
+.color-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.color-picker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.color-icon,
+.highlight-icon {
+    font-size: 14px;
+    line-height: 1;
 }
 
 /* Color Picker Buttons */
@@ -603,6 +663,9 @@ body {
     line-height: 1.7;
     overflow-y: auto;
     outline: none;
+    caret-color: var(--text-primary);
+    /* Ensure cursor matches text color */
+    cursor: text;
 }
 
 .editor:empty::before {
@@ -640,6 +703,8 @@ body {
     align-items: flex-start;
     gap: var(--space-sm);
     margin-bottom: var(--space-sm);
+    width: 100%;
+    /* Force full width to prevent same-line stacking */
 }
 
 .editor .checkbox-item input[type="checkbox"] {
@@ -648,6 +713,13 @@ body {
     height: 16px;
     accent-color: var(--accent-primary);
     cursor: pointer;
+}
+
+.editor .checkbox-item span {
+    flex: 1;
+    outline: none;
+    min-height: 1.5em;
+    word-break: break-word;
 }
 
 .editor .checkbox-item.checked span {

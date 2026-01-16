@@ -34,6 +34,10 @@ class Editor {
         this.editor.addEventListener('keydown', (e) => this.handleKeydown(e));
         this.editor.addEventListener('paste', (e) => this.handlePaste(e));
 
+        // Update toolbar active states
+        this.editor.addEventListener('keyup', () => this.updateToolbarState());
+        this.editor.addEventListener('mouseup', () => this.updateToolbarState());
+
         this.titleInput.addEventListener('input', () => this.scheduleAutosave());
 
         // Press Enter in title to move to editor
@@ -64,13 +68,50 @@ class Editor {
                 if (command === 'checkbox') {
                     this.insertCheckbox();
                 } else if (command === 'formatBlock') {
-                    document.execCommand(command, false, `<${value}>`);
+                    // Use font size for headings to allow inline/selection styling
+                    const targetSize = value === 'h1' ? '6' : (value === 'h2' ? '5' : '3');
+                    const currentSize = document.queryCommandValue('fontSize');
+
+                    // Toggle: If already this size, reset to normal (3), else apply size
+                    if (currentSize === targetSize) {
+                        document.execCommand('fontSize', false, '3');
+                    } else {
+                        document.execCommand('fontSize', false, targetSize);
+                    }
                 } else {
                     document.execCommand(command, false, value || null);
                 }
 
                 this.editor.focus();
+                // Check state immediately after command
+                setTimeout(() => this.updateToolbarState(), 0);
             });
+        });
+    }
+
+    updateToolbarState() {
+        // Only update if editor is focused
+        if (document.activeElement !== this.editor) return;
+
+        document.querySelectorAll('.toolbar-btn[data-command]').forEach(btn => {
+            const command = btn.dataset.command;
+            const value = btn.dataset.value;
+            let isActive = false;
+
+            if (command === 'formatBlock') {
+                const currentSize = document.queryCommandValue('fontSize');
+                // HTML font size 6 = H1, 5 = H2, 3 = Normal (default)
+                const targetSize = value === 'h1' ? '6' : (value === 'h2' ? '5' : '3');
+                isActive = (currentSize === targetSize);
+            } else if (['bold', 'italic', 'underline', 'strikeThrough', 'insertUnorderedList'].includes(command)) {
+                isActive = document.queryCommandState(command);
+            }
+
+            if (isActive) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         });
     }
 
@@ -130,6 +171,90 @@ class Editor {
         if (e.key === 'Tab') {
             e.preventDefault();
             document.execCommand('insertText', false, '    ');
+        }
+
+        if (e.key === 'Enter') {
+            // Check if we are inside a checkbox
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                let node = selection.getRangeAt(0).commonAncestorContainer;
+                while (node && node !== this.editor) {
+                    // Check if we are in a checkbox container
+                    if (node.nodeType === 1 && node.classList.contains('checkbox-item')) {
+                        // VALIDATION: Does it start with a checkbox input?
+                        const hasCheckbox = node.querySelector('input[type="checkbox"]');
+
+                        // If it's a "Ghost" checkbox (class exists but no input), sanitize it
+                        if (!hasCheckbox) {
+                            node.classList.remove('checkbox-item');
+                            // Fallback to normal behavior (break loop)
+                            break;
+                        }
+
+                        e.preventDefault();
+
+                        // Check if current checkbox text is empty (Break out of list)
+                        const currentSpan = node.querySelector('span');
+                        const isEmpty = !currentSpan || currentSpan.innerText.trim() === ''; // Robust empty check
+
+                        if (isEmpty) {
+                            // Break out: Create standard text block
+                            const newBlock = document.createElement('div');
+                            newBlock.innerHTML = '<br>';
+
+                            if (node.nextSibling) {
+                                node.parentNode.insertBefore(newBlock, node.nextSibling);
+                            } else {
+                                node.parentNode.appendChild(newBlock);
+                            }
+
+                            node.remove(); // Remove empty checkbox item
+
+                            // Focus new block
+                            const range = document.createRange();
+                            range.selectNodeContents(newBlock);
+                            range.collapse(true);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                            return;
+                        }
+
+                        // Continue list: Create new checkbox
+                        const newCheckbox = document.createElement('div');
+                        newCheckbox.className = 'checkbox-item';
+                        newCheckbox.innerHTML = `
+                            <input type="checkbox" onchange="this.parentElement.classList.toggle('checked', this.checked)">
+                            <span contenteditable="true"></span>
+                        `;
+
+                        if (node.nextSibling) {
+                            node.parentNode.insertBefore(newCheckbox, node.nextSibling);
+                        } else {
+                            node.parentNode.appendChild(newCheckbox);
+                        }
+
+                        // Focus new checkbox properly
+                        setTimeout(() => {
+                            const span = newCheckbox.querySelector('span');
+                            span.focus();
+                            const range = document.createRange();
+                            range.selectNodeContents(span);
+                            range.collapse(false);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }, 0);
+                        return;
+                    }
+                    node = node.parentNode;
+                }
+            }
+
+            // Normal Enter: Reset to normal font size on new line
+            setTimeout(() => {
+                document.execCommand('fontSize', false, '3');
+            }, 0);
         }
     }
 
