@@ -8,7 +8,9 @@
     <meta name="description" content="A simple, functional notes app with calendar navigation and rich formatting">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
@@ -140,6 +142,25 @@
                                 <line x1="4" y1="12" x2="20" y2="12"></line>
                             </svg>
                         </button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <!-- Font Controls -->
+                    <div class="toolbar-group font-controls">
+                        <select id="font-family" class="toolbar-select" title="Font Style">
+                            <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                            <option value="'Inter', sans-serif">Inter</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                        </select>
+                        <select id="font-size" class="toolbar-select" title="Font Size">
+                            <option value="12px">12</option>
+                            <option value="14px" selected>14</option>
+                            <option value="16px">16</option>
+                            <option value="18px">18</option>
+                            <option value="20px">20</option>
+                            <option value="24px">24</option>
+                        </select>
                     </div>
                     <div class="toolbar-divider"></div>
                     <div class="toolbar-group">

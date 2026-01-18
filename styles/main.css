@@ -607,6 +607,39 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Toolbar Select Dropdowns */
+.toolbar-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.toolbar-select:hover {
+    border-color: var(--accent-primary);
+}
+
+.toolbar-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.font-controls {
+    gap: var(--space-sm);
+}
+
+#font-family {
+    min-width: 110px;
+}
+
+#font-size {
+    min-width: 55px;
+}
 
 /* Note Title */
 .note-title-container {
@@ -645,12 +678,12 @@ body {
     padding: var(--space-xl);
     background: var(--bg-editor);
     color: var(--text-primary);
-    font-size: var(--font-size-lg);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
     line-height: 1.7;
     overflow-y: auto;
     outline: none;
     caret-color: var(--text-primary);
-    /* Ensure cursor matches text color */
     cursor: text;
 }
 

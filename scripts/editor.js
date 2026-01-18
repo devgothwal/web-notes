@@ -145,6 +145,67 @@ class Editor {
         initColorDropdown('btn-text-color', 'dropdown-text', 'foreColor');
         initColorDropdown('btn-highlight-color', 'dropdown-highlight', 'hiliteColor');
 
+        // Font Controls
+        const fontFamilySelect = document.getElementById('font-family');
+        const fontSizeSelect = document.getElementById('font-size');
+
+        fontFamilySelect.addEventListener('change', (e) => {
+            this.editor.style.fontFamily = e.target.value;
+            this.editor.focus();
+        });
+
+        fontSizeSelect.addEventListener('change', (e) => {
+            const size = e.target.value;
+
+            // Save selection before focus might change
+            const sel = window.getSelection();
+            let savedRange = null;
+            if (sel.rangeCount > 0) {
+                savedRange = sel.getRangeAt(0).cloneRange();
+            }
+
+            this.editor.focus();
+
+            // Restore selection
+            if (savedRange) {
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+            }
+
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+
+                if (range.collapsed) {
+                    // Caret only: Insert span with new size and place cursor inside
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.style.fontSize = size;
+                    sizeSpan.innerHTML = '&#8203;'; // ZWSP
+                    range.insertNode(sizeSpan);
+
+                    // Move cursor INSIDE the span
+                    range.setStart(sizeSpan.firstChild, 1);
+                    range.setEnd(sizeSpan.firstChild, 1);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } else {
+                    // Selected text: Wrap in span with new size
+                    const selectedText = range.extractContents();
+                    const wrapper = document.createElement('span');
+                    wrapper.style.fontSize = size;
+                    wrapper.appendChild(selectedText);
+                    range.insertNode(wrapper);
+
+                    // Re-select the wrapped content
+                    sel.removeAllRanges();
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(wrapper);
+                    sel.addRange(newRange);
+                }
+            }
+
+            this.scheduleAutosave();
+        });
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', () => {
             document.querySelectorAll('.color-dropdown').forEach(d => d.classList.remove('show'));
